@@ -1,0 +1,269 @@
+openapi: 3.0.4
+x-stoplight:
+  id: 99jv52uebo1up
+info:
+  title: eBike Lock API
+  version: 1.0.0
+  description: This API provides lock related functionality.
+  contact:
+    email: cloud-api.support@de.bosch.com
+    name: Bosch eBike Systems Support
+servers:
+  - description: Production
+    url: 'https://api.bosch-ebike.com/lock/v1'
+tags:
+  - name: Unlock tokens
+    description: Handles crypto material for unlocking of bike components.
+paths:
+  /unlock-tokens:
+    x-status: draft
+    post:
+      tags:
+        - Unlock tokens
+      summary: Generate unlock tokens to unlock components
+      description: |
+        This API endpoint generates unlock tokens to unlock components when lock is enabled. Note that the requesting client needs to register all components before access is granted.
+
+        If a component is registered by a different entity, HTTP `403` status code with error type `/problems/component-registration-error` is returned. If the registration status of a component is unknown or it is not registered by any entity, HTTP `403` status code with error type `/problems/component-not-registered-error` is returned. If there are issues with more than one component, the error of one of the components is returned.
+      operationId: unlock-tokens
+      security:
+        - Client: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UnlockTokensRequest'
+      responses:
+        '200':
+          description: Unlock tokens successfully generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnlockTokens'
+        '400':
+          $ref: '#/components/responses/badRequestResponseV1'
+        '401':
+          $ref: '#/components/responses/unauthorizedResponseV1'
+        '403':
+          description: Forbidden
+          content:
+            text/plain:
+              schema:
+                type: string
+              examples:
+                access-denied:
+                  value: 'RBAC: access denied'
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/problem-1.0.0'
+              examples:
+                Component registration error:
+                  value:
+                    requestId: db2350e8d5bf653d2d6ed2bafb873104
+                    type: /problems/component-registration-error
+                    detail: 'Component registration check failed (partNumber: 0000000033-00, serialNumber: 00000-0000-LL-PPP-00-KKKK)'
+                Component not registered error:
+                  value:
+                    requestId: db2350e8d5bf653d2d6ed2bafb873104
+                    type: /problems/component-not-registered-error
+                    detail: 'Component is not registered (partNumber: 0000000033-00, serialNumber: 00000-0000-LL-PPP-00-KKKK)'
+        '429':
+          $ref: '#/components/responses/rateLimitResponseV1'
+        default:
+          description: Error occurred - see status code and problem object for more information.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/problem-1.0.0'
+      x-stoplight:
+        id: xrjwqn91ldlom
+components:
+  schemas:
+    UnlockTokensRequest:
+      type: object
+      properties:
+        components:
+          type: array
+          description: The lockable components to fetch unlock tokens for.
+          minItems: 1
+          maxItems: 10
+          items:
+            type: object
+            properties:
+              freshnessCount:
+                type: integer
+                format: int64
+                default: 0
+                example: 0
+                minimum: 0
+                maximum: 4294967295
+                description: |
+                  The freshness count can be used to invalidate unlock tokens before they expire. When lock is enabled or disabled on a component, a freshness count is persisted on it. Only unlock tokens with a matching freshness count can be used to unlock the component.
+
+                  By increasing the freshness count on the component (by enabling or disabling lock and using a larger freshness count value), all issued tokens can be invalidated.
+              partNumber:
+                type: string
+                description: The part number of the component.
+                example: 0000000033-00
+                minLength: 10
+                maxLength: 13
+              serialNumber:
+                type: string
+                description: The serial number of the component.
+                example: 00000-0000-LL-PPP-00-KKKK
+                minLength: 25
+                maxLength: 25
+              softwareVersion:
+                type: string
+                description: The software version of the software running on the component.
+                example: '1.2'
+                minLength: 1
+                maxLength: 11
+              hardwareSoftwareVersion:
+                type: string
+                description: The hardware software version of the component.
+                example: 1.0.1
+                minLength: 1
+                maxLength: 11
+            required:
+              - partNumber
+              - serialNumber
+              - softwareVersion
+              - hardwareSoftwareVersion
+      required:
+        - components
+      x-stoplight:
+        id: o3vsarvmfbfiu
+    UnlockTokens:
+      type: object
+      properties:
+        unlockTokens:
+          type: array
+          description: 'Unlock tokens, one for each component in the request.'
+          items:
+            type: object
+            properties:
+              partNumber:
+                type: string
+                description: The part number of the component.
+                example: 0000000033-00
+                minLength: 10
+                maxLength: 13
+              serialNumber:
+                type: string
+                description: The serial number of the component.
+                example: 00000-0000-LL-PPP-00-KKKK
+                minLength: 25
+                maxLength: 25
+              unlockToken:
+                type: string
+                description: BASE64-encoded unlock token.
+                example: VW5sb2NrIHRva2Vu
+                minLength: 0
+                maxLength: 1000
+              expiredAt:
+                type: string
+                format: date-time
+                example: '2030-01-01T00:00:00.00000Z'
+                description: |
+                  Timestamp when the unlock token expires. After this time, the unlock token can no longer be used to unlock the component.
+            required:
+              - partNumber
+              - serialNumber
+              - unlockToken
+              - expiredAt
+      required:
+        - unlockTokens
+      x-stoplight:
+        id: 33yurvlpeak0u
+    problem-1.0.0:
+      type: object
+      title: Problem
+      required:
+        - type
+        - detail
+        - requestId
+      properties:
+        type:
+          type: string
+          format: uri-reference
+          description: |
+            A URI reference that uniquely identifies the problem type only in the context of the provided API. Opposed to the specification in RFC-7807, it is neither recommended to be dereferenceable and point to a human-readable documentation nor globally unique for the problem type.
+          default: 'about:blank'
+          example: /problems/connection-error
+        title:
+          type: string
+          description: |
+            A short summary of the problem type. Written in English and readable for engineers, usually not suited for non technical stakeholders and not localized.
+          example: Service Unavailable
+        status:
+          type: integer
+          format: int32
+          description: |
+            The HTTP status code generated by the origin server for this occurrence of the problem.
+          minimum: 100
+          maximum: 599
+          example: 503
+        detail:
+          type: string
+          description: |
+            A human readable explanation specific to this occurrence of the problem that is helpful to locate the problem and give advice on how to proceed. Written in English and readable for engineers, usually not suited for non technical stakeholders and not localized.
+          example: Connection to database timed out
+        instance:
+          type: string
+          example: /problems/connection-error#token-info-read-timed-out
+          format: uri-reference
+          description: |
+            A URI reference that identifies the specific occurrence of the problem, e.g. by adding a fragment identifier or sub-path to the problem type. May be used to locate the root of this problem in the source code.
+        requestId:
+          type: string
+          description: ID for this request.
+          example: 075be661d3a4460b98dee5d66849dd5e
+      x-stoplight:
+        id: mfkc0zf8eignm
+  securitySchemes:
+    Client:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: 'https://p9.authz.bosch.com/auth/realms/obc/protocol/openid-connect/token'
+          refreshUrl: 'https://p9.authz.bosch.com/auth/realms/obc/protocol/openid-connect/token'
+          scopes: {}
+      description: Bosch Identity & Access Management
+  responses:
+    badRequestResponseV1:
+      description: |
+        Request parameters are malformed.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/problem-1.0.0'
+    unauthorizedResponseV1:
+      description: |
+        Unauthorized
+      content:
+        text/plain:
+          schema:
+            type: string
+          examples:
+            access-token-expired:
+              value: JWT is expired
+            access-token-validation-failed:
+              value: JWT verification failed
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/problem-1.0.0'
+    rateLimitResponseV1:
+      description: Too Many Requests
+      headers:
+        X-RateLimit-Limit:
+          description: 'Bucket size, refresh size and time window for refresh, in seconds'
+          schema:
+            type: string
+          example: '100, 100;w=60'
+        X-RateLimit-Reset:
+          description: Time in seconds until bucket is refreshed
+          schema:
+            type: integer
+          example: 57
