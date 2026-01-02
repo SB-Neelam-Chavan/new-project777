@@ -2,7 +2,7 @@
 stoplight-id: qt7ypagu2plvz
 ---
 
-# 👋 Welcome
+# 👋 Welcome1
 Welcome to the **Cloud API** of Bosch eBike Systems. We provide several APIs. Just explore the different categories and pick and integrate those APIs into your application, which are necessary for your use cases.
 
 - **Cloud API for eBike Flow app** provides riders read-only access to their data like eBike profile and activity records, collected via the eBike Flow app and enables OEMs to upload bike model information to be served by the eBike Flow app
