@@ -1,6 +1,4 @@
 openapi: 3.0.0
-x-stoplight:
-  id: d9rdwooe4j7hl
 info:
   title: ConnectModule Configuration API
   version: 1.1.0
