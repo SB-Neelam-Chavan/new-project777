@@ -2,7 +2,7 @@
 stoplight-id: lq0bjjouhichm
 ---
 
-# Cloud API for eBike product data
+# Cloud API for eBike product data1
 _Cloud API for eBike product data_ currently offers the _Supply Chain Data API_, which enables OEMs to exchange supply chain data with Bosch to gain insights into market dynamics.
 
 <!-- theme: info -->
